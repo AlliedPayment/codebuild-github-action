@@ -1,0 +1,34 @@
+name: 'AlliedPayment Codebuild Actions'
+description: 'Runs codebuild commands via GitHub Actions.'
+author:  'AlliedPayment'
+branding:
+  icon: 'cloud'
+  color: 'purple'
+inputs:
+  command: 
+    description: 'Command to run'
+    required: true 
+  project-name:
+    description: 'AWS CodeBuild Project Name'
+    required: true
+  arn: 
+    description: 'AWS CodeBuild Arn to wait for'
+    required: false 
+  waittimeout: 
+    description: 'How long to wait for the build to complete for'
+    required: false 
+    default: '00:20:00'
+  buildspec-override:
+    description: 'Buildspec Override'
+    required: false
+  env-vars-for-codebuild:
+    description: 'Comma separated list of environment variables to send to CodeBuild'
+    required: false  
+outputs:
+    aws-build-id:
+      description: 'The AWS CodeBuild Build ID for this build.'
+    build-status: 
+      description: 'The final status of the aws codebuild build'
+runs:
+  using: 'docker'
+  image: './Dockerfile'
