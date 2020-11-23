@@ -40,7 +40,7 @@ namespace Allied.Codebuild
             if (command == "wait")
             {
                 var status = await Wait(req.Arn, req.WaitTimeout);
-                Console.WriteLine("::set-output name=aws-build-id::{0}", status);
+                Console.WriteLine("::set-output name=aws-build-status::{0}", status);
 
             }
         }
