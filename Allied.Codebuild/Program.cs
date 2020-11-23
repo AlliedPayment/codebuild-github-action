@@ -45,7 +45,10 @@ namespace Allied.Codebuild
                 var status = await Wait(req.Arn, req.WaitTimeout);
                 Console.WriteLine("::set-output name=build-status::{0}", status);
                 Console.WriteLine("Build-Status: " + status);
-
+                if (status != StatusType.SUCCEEDED)
+                {
+                    Environment.ExitCode = 2;
+                }
             }
         }
 
