@@ -33,14 +33,18 @@ namespace Allied.Codebuild
 
             if (command == "build")
             {
+                Console.WriteLine("Building");
                 var arn = await Build(req);
                 Console.WriteLine("::set-output name=aws-build-id::{0}", arn);
+                Console.WriteLine("Build-Id: " + arn);
             }
 
             if (command == "wait")
             {
+                Console.WriteLine("Waiting");
                 var status = await Wait(req.Arn, req.WaitTimeout);
                 Console.WriteLine("::set-output name=build-status::{0}", status);
+                Console.WriteLine("Build-Status: " + status);
 
             }
         }
@@ -103,15 +107,17 @@ namespace Allied.Codebuild
             if (isTimedOut)
             {
                 status = StatusType.TIMED_OUT;
+                Console.WriteLine("::error::Timed out");
                 Console.WriteLine("Timed out");
             }
 
             if (!isComplete)
             {
                 Console.WriteLine("Complete");
+                Console.WriteLine("::debug::Complete");
                 Console.WriteLine("Successful: " + isSuccessful);
             }
-
+            Console.WriteLine("::debug::Status " + status);
             return status;
         }
 
