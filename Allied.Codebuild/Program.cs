@@ -81,7 +81,7 @@ namespace Allied.Codebuild
             return req;
         }
       
-        static async Task<string> Wait(string arn, TimeSpan timeout)
+        static async Task<string> Wait(string arn, TimeSpan timeout, int maxRetries = 3)
         {
             var status = StatusType.IN_PROGRESS;
             var client = new Amazon.CodeBuild.AmazonCodeBuildClient();
@@ -90,6 +90,7 @@ namespace Allied.Codebuild
             bool isTimedOut = false;
             bool isSuccessful = false;
             DateTimeOffset start = DateTimeOffset.Now;
+            int retry = 0;
             while (!isComplete && !isTimedOut)
             {
                 var result = await client.BatchGetBuildBatchesAsync(new BatchGetBuildBatchesRequest()
@@ -104,6 +105,21 @@ namespace Allied.Codebuild
                 {
                     Console.WriteLine("Not complete... waiting " + waitTime);
                     await Task.Delay(waitTime);
+                }
+
+                if (isComplete && !isSuccessful && !isTimedOut && retry < maxRetries)
+                {
+                    //retry 
+                    retry += 1;
+                    var retryResult = await  client.RetryBuildBatchAsync(new RetryBuildBatchRequest()
+                    {
+                        Id = arn,
+                        RetryType = RetryBuildBatchType.RETRY_FAILED_BUILDS,
+                        IdempotencyToken = Guid.NewGuid().ToString(),
+                    });
+                    isComplete = false;
+                    start = DateTimeOffset.UtcNow;
+                    arn = retryResult.BuildBatch.Arn;
                 }
             }
 
@@ -129,8 +145,7 @@ namespace Allied.Codebuild
             var client = new Amazon.CodeBuild.AmazonCodeBuildClient();
             var result = await client.StartBuildBatchAsync(new StartBuildBatchRequest()
             {
-                EnvironmentVariablesOverride = 
-                    request.EnvironmentVariablesOverride,
+                EnvironmentVariablesOverride = request.EnvironmentVariablesOverride,
                 ProjectName = request.ProjectName,
                 BuildspecOverride = request.BuildspecOverride,
             });
