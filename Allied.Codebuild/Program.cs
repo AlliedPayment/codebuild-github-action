@@ -143,6 +143,39 @@ namespace Allied.Codebuild
         static async Task<string> Build(BuildRequest request)
         {
             var client = new Amazon.CodeBuild.AmazonCodeBuildClient();
+
+            //check if there is a successful build with that version number 
+            //if there is, don't build a new one
+
+            var validBuilds = await client.ListBuildBatchesForProjectAsync(new ListBuildBatchesForProjectRequest()
+            {
+                ProjectName = request.ProjectName,
+                Filter = new BuildBatchFilter()
+                {
+                    Status = StatusType.SUCCEEDED
+                }
+            });
+
+            var detail = await client.BatchGetBuildBatchesAsync(new BatchGetBuildBatchesRequest()
+            {
+                Ids = validBuilds.Ids
+            });
+
+            var reqenv = request.EnvironmentVariablesOverride.ToDictionary(x => x.Name, x => x.Value);
+            foreach (var build in detail.BuildBatches)
+            {
+                var buildenv = build.Environment.EnvironmentVariables.ToDictionary(x => x.Name, x => x.Value);
+                string reqVersion;
+                reqenv.TryGetValue("Version", out reqVersion);
+                string buildVersion;
+                buildenv.TryGetValue("Version", out buildVersion);
+                if (reqVersion == buildVersion)
+                {
+                    Console.WriteLine("Found old version... returning that arn");
+                    return build.Arn;
+                }
+            }
+
             var result = await client.StartBuildBatchAsync(new StartBuildBatchRequest()
             {
                 EnvironmentVariablesOverride = request.EnvironmentVariablesOverride,
@@ -151,6 +184,7 @@ namespace Allied.Codebuild
             });
             var arn = result.BuildBatch.Arn;
             return arn;
+
         }
 
         static Dictionary<string, string> GetInputs()
